@@ -1,3 +1,4 @@
+// File: Views/MainView.axaml.cs
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -10,13 +11,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-
+using ProjectZetaTeam;
 
 namespace ProjectZetaTeam.Views
 {
     public partial class MainView : UserControl
     {
         private readonly string[] _supportedExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
+
         public MainView()
         {
             InitializeComponent();
@@ -65,12 +67,12 @@ namespace ProjectZetaTeam.Views
                 AllowMultiple = false,
                 FileTypeFilter = new FilePickerFileType[]
                 {
-                new FilePickerFileType("Изображения (*.jpg, *.png, *.webp)")
-                {
-                    Patterns = new[] { "*.jpg", "*.jpeg", "*.png", "*.webp" },
-                    MimeTypes = new[] { "image/jpeg", "image/png", "image/webp" }
-                },
-                FilePickerFileTypes.All
+                    new FilePickerFileType("Изображения (*.jpg, *.png, *.webp)")
+                    {
+                        Patterns = new[] { "*.jpg", "*.jpeg", "*.png", "*.webp" },
+                        MimeTypes = new[] { "image/jpeg", "image/png", "image/webp" }
+                    },
+                    FilePickerFileTypes.All
                 }
             };
 
@@ -165,11 +167,20 @@ namespace ProjectZetaTeam.Views
             var topLevel = TopLevel.GetTopLevel(this);
             if (topLevel == null) return;
 
+            string originalFileName = Path.GetFileName(_currentInputFilePath);
+            string nameNoExt = Path.GetFileNameWithoutExtension(originalFileName);
+            string ext = Path.GetExtension(originalFileName);
+            string suggestedName = $"{nameNoExt}_stego{ext}";
+
             var saveOptions = new FilePickerSaveOptions
             {
                 Title = "Сохранить изображение",
-                SuggestedFileName = $"ZetaTeam_{Guid.NewGuid().ToString().Substring(0, 8)}.png",
-                FileTypeChoices = new[] { FilePickerFileTypes.ImagePng }
+                SuggestedFileName = suggestedName,
+                FileTypeChoices = new[]
+                {
+                    FilePickerFileTypes.ImagePng,
+                    FilePickerFileTypes.ImageWebp
+                }
             };
 
             var targetFile = await topLevel.StorageProvider.SaveFilePickerAsync(saveOptions);
@@ -182,17 +193,37 @@ namespace ProjectZetaTeam.Views
                 if (MethodsSelect.SelectedIndex == 0) // LSB
                 {
                     await Task.Run(() => LsbSteganography.HideText(_currentInputFilePath, outputPath, secretText));
+
+                    Logger.LogOperation(
+                        operation: "ENCRYPT_LSB",
+                        fileName: _currentInputFilePath,
+                        message: secretText,
+                        success: true
+                    );
                     MessageTextBlock.Text = "Изображение успешно сохранено!";
                 }
                 else if (MethodsSelect.SelectedIndex == 1) // EXIF
                 {
                     await Task.Run(() => ExifSteganography.HideMessageInExif(_currentInputFilePath, secretText, outputPath));
+
+                    Logger.LogOperation(
+                        operation: "ENCRYPT_EXIF",
+                        fileName: _currentInputFilePath,
+                        message: secretText,
+                        success: true
+                    );
                     MessageTextBlock.Text = "Сообщение успешно спрятано!";
                 }
-                
             }
             catch (Exception ex)
             {
+                Logger.LogOperation(
+                    operation: "ENCRYPT_ERROR",
+                    fileName: _currentInputFilePath ?? "unknown",
+                    message: secretText,
+                    success: false,
+                    error: ex.Message
+                );
                 MessageTextBlock.Text = $"Ошибка: {ex.Message}";
             }
         }
@@ -215,14 +246,35 @@ namespace ProjectZetaTeam.Views
                     {
                         TextMessage.Text = hiddenMessage;
                         MessageTextBlock.Text = "Сообщение успешно извлечено.";
+
+                        Logger.LogOperation(
+                            operation: "DECRYPT_LSB",
+                            fileName: _currentInputFilePath,
+                            message: hiddenMessage,
+                            success: true
+                        );
                     }
                     else
                     {
                         MessageTextBlock.Text = "Сообщений не найдено.";
+                        Logger.LogOperation(
+                            operation: "DECRYPT_LSB",
+                            fileName: _currentInputFilePath,
+                            message: "",
+                            success: false,
+                            error: "No message found"
+                        );
                     }
                 }
                 catch (Exception ex)
                 {
+                    Logger.LogOperation(
+                        operation: "DECRYPT_ERROR_LSB",
+                        fileName: _currentInputFilePath ?? "unknown",
+                        message: "",
+                        success: false,
+                        error: ex.Message
+                    );
                     MessageTextBlock.Text = $"Ошибка дешифровки: {ex.Message}";
                 }
             }
@@ -238,13 +290,39 @@ namespace ProjectZetaTeam.Views
 
                     string message = await Task.Run(() => ExifSteganography.ExtractMessageFromExif(_currentInputFilePath));
 
-                    MessageTextBlock.Text = string.IsNullOrEmpty(message)
-                        ? "Сообщений не найдено."
-                        : $"Сообщение успешно извлечено.";
-                    TextMessage.Text = message;
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        TextMessage.Text = message;
+                        MessageTextBlock.Text = "Сообщение успешно извлечено.";
+
+                        Logger.LogOperation(
+                            operation: "DECRYPT_EXIF",
+                            fileName: _currentInputFilePath,
+                            message: message,
+                            success: true
+                        );
+                    }
+                    else
+                    {
+                        MessageTextBlock.Text = "Сообщений не найдено.";
+                        Logger.LogOperation(
+                            operation: "DECRYPT_EXIF",
+                            fileName: _currentInputFilePath,
+                            message: "",
+                            success: false,
+                            error: "No message found"
+                        );
+                    }
                 }
                 catch (Exception ex)
                 {
+                    Logger.LogOperation(
+                        operation: "DECRYPT_ERROR_EXIF",
+                        fileName: _currentInputFilePath ?? "unknown",
+                        message: "",
+                        success: false,
+                        error: ex.Message
+                    );
                     MessageTextBlock.Text = $"Ошибка дешифровки: {ex.Message}";
                 }
             }
