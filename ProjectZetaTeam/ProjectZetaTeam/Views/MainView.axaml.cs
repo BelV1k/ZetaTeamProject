@@ -13,17 +13,28 @@ using System.Linq;
 using System.Threading.Tasks;
 using ProjectZetaTeam;
 
+
+
+
+
 namespace ProjectZetaTeam.Views
 {
     public partial class MainView : UserControl
     {
+
+//image file extensions
         private readonly string[] _supportedExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
 
+//init ui
+//default using lsb
         public MainView()
         {
             InitializeComponent();
             MethodsSelect.SelectedIndex = 0;
         }
+
+
+//dark/light theme
 
         private void ThemeToggleButton_OnClick(object? sender, RoutedEventArgs e)
         {
@@ -36,6 +47,8 @@ namespace ProjectZetaTeam.Views
                     : ThemeVariant.Dark;
             }
         }
+
+//button_select file
 
         private async void SelectFileButton_Click(object? sender, RoutedEventArgs e)
         {
@@ -52,7 +65,7 @@ namespace ProjectZetaTeam.Views
                 MessageTextBlock.Text = $"Ошибка выбора файла: {ex.Message}";
             }
         }
-
+//get filepath or null
         private async Task<string?> OpenImageFileDialogAsync()
         {
             var topLevel = TopLevel.GetTopLevel(this);
@@ -86,6 +99,9 @@ namespace ProjectZetaTeam.Views
             return null;
         }
 
+
+//drag file on ui
+
         private void OnVisualElementDragOver(object? sender, DragEventArgs e)
         {
             if (e.DataTransfer.Contains(DataFormat.File))
@@ -93,6 +109,9 @@ namespace ProjectZetaTeam.Views
             else
                 e.DragEffects = DragDropEffects.None;
         }
+
+
+//show the pic
 
         private async Task LoadAndDisplayImageAsync(string filePath)
         {
@@ -118,6 +137,9 @@ namespace ProjectZetaTeam.Views
             }
         }
 
+
+
+//drop the file on ui
         private async void OnVisualElementDrop(object? sender, DragEventArgs e)
         {
             try
@@ -147,7 +169,13 @@ namespace ProjectZetaTeam.Views
             }
         }
 
+
+//the file path
+
         private string? _currentInputFilePath;
+
+
+//button: encrypt,write text into image
 
         private async void OnEncryptAndSaveButtonClick(object? sender, RoutedEventArgs e)
         {
@@ -228,13 +256,17 @@ namespace ProjectZetaTeam.Views
             }
         }
 
+
+
+//read info from image
+
         private async void OnDecryptButtonClick(object? sender, RoutedEventArgs e)
         {
             if (MethodsSelect.SelectedIndex == 0) // LSB
             {
                 try
                 {
-                    if (string.IsNullOrEmpty(_currentInputFilePath))
+                    if (string.IsNullOrEmpty(_currentInputFilePath))  //if file name was empty hint a error
                     {
                         MessageTextBlock.Text = "Ошибка: Сначала перетащите или выберите зашифрованный файл!";
                         return;
@@ -242,7 +274,7 @@ namespace ProjectZetaTeam.Views
 
                     string hiddenMessage = await Task.Run(() => LsbSteganography.ExtractText(_currentInputFilePath));
 
-                    if (!string.IsNullOrEmpty(hiddenMessage))
+                    if (!string.IsNullOrEmpty(hiddenMessage)) // might show up some random symbol,need to fix here
                     {
                         TextMessage.Text = hiddenMessage;
                         MessageTextBlock.Text = "Сообщение успешно извлечено.";

@@ -10,6 +10,11 @@ namespace ProjectZetaTeam.Views
 {
     public static class LsbSteganography
     {
+        // magic header: 0xAA 0xBB 0xCC
+        private static readonly byte[] MAGIC_HEADER = { 0xAA, 0xBB, 0xCC };
+        private const int MAGIC_LEN = 3;
+        private const int LENGTH_LEN = 4;
+
         public static void HideText(string inputPath, string outputPath, string secretText)
         {
             if (string.IsNullOrEmpty(inputPath))
@@ -19,10 +24,15 @@ namespace ProjectZetaTeam.Views
             if (secretText == null)
                 throw new ArgumentNullException(nameof(secretText));
 
+            byte[] secretBytes = Encoding.UTF8.GetBytes(secretText);
 
-            byte[] textBytes = Encoding.UTF8.GetBytes(secretText + "\0");
+            byte[] lengthBytes = BitConverter.GetBytes(secretBytes.Length);
+            byte[] allData = new byte[MAGIC_LEN + LENGTH_LEN + secretBytes.Length];
+            Buffer.BlockCopy(MAGIC_HEADER, 0, allData, 0, MAGIC_LEN);
+            Buffer.BlockCopy(lengthBytes, 0, allData, MAGIC_LEN, LENGTH_LEN);
+            Buffer.BlockCopy(secretBytes, 0, allData, MAGIC_LEN + LENGTH_LEN, secretBytes.Length);
 
-            BitArray bits = new BitArray(textBytes);
+            BitArray bits = new BitArray(allData);
             int bitIndex = 0;
 
             using Image<Rgba32> image = Image.Load<Rgba32>(inputPath);
@@ -67,21 +77,21 @@ namespace ProjectZetaTeam.Views
 
             using Image<Rgba32> image = Image.Load<Rgba32>(imagePath);
 
+    
             List<byte> extractedBytes = new List<byte>();
             byte currentByte = 0;
             int bitPosition = 0;
-            bool messageCompleted = false;
 
             image.ProcessPixelRows(accessor =>
             {
-                for (int y = 0; y < accessor.Height && !messageCompleted; y++)
+                for (int y = 0; y < accessor.Height; y++)
                 {
                     Span<Rgba32> row = accessor.GetRowSpan(y);
-                    for (int x = 0; x < row.Length && !messageCompleted; x++)
+                    for (int x = 0; x < row.Length; x++)
                     {
                         Rgba32 pixel = row[x];
 
-                        for (int channel = 0; channel < 3 && !messageCompleted; channel++)
+                        for (int channel = 0; channel < 3; channel++)
                         {
                             int bitValue = 0;
                             switch (channel)
@@ -99,13 +109,6 @@ namespace ProjectZetaTeam.Views
                             if (bitPosition == 8)
                             {
                                 extractedBytes.Add(currentByte);
-
-                                if (currentByte == 0)
-                                {
-                                    messageCompleted = true;
-                                    break;
-                                }
-
                                 currentByte = 0;
                                 bitPosition = 0;
                             }
@@ -114,13 +117,27 @@ namespace ProjectZetaTeam.Views
                 }
             });
 
-            if (!messageCompleted && extractedBytes.Count > 0 && extractedBytes[^1] != 0)
+            // check is place enough
+            if (extractedBytes.Count < MAGIC_LEN + LENGTH_LEN)
+                return string.Empty;
+
+            // magic header
+            for (int i = 0; i < MAGIC_LEN; i++)
             {
-                extractedBytes.RemoveAt(extractedBytes.Count - 1);
+                if (extractedBytes[i] != MAGIC_HEADER[i])
+                    return string.Empty;
             }
 
-            string result = Encoding.UTF8.GetString(extractedBytes.ToArray());
-            return result.TrimEnd('\0');
+            // lenth 
+            int messageLength = BitConverter.ToInt32(extractedBytes.ToArray(), MAGIC_LEN);
+            if (messageLength <= 0 || messageLength > extractedBytes.Count - (MAGIC_LEN + LENGTH_LEN))
+                return string.Empty;
+
+            // message 
+            byte[] messageBytes = extractedBytes.GetRange(MAGIC_LEN + LENGTH_LEN, messageLength).ToArray();
+
+            string result = Encoding.UTF8.GetString(messageBytes);
+            return result;
         }
     }
 }

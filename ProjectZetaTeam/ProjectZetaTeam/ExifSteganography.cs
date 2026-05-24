@@ -6,6 +6,14 @@ using System.IO;
 
 namespace ProjectZetaTeam
 {
+
+
+// class ExifSteganography{
+//     HideMessageInExif()
+//     ExtractMessageFromExif()    
+// }
+
+
     internal static class ExifSteganography
     {
         public static void HideMessageInExif(string inputPath, string message, string outputPath)
