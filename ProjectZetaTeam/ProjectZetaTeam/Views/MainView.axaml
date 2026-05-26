@@ -41,17 +41,22 @@
 
                 <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0,0,0,25">
 
-                    <!-- theme -->
-                    <Button Name="ThemeToggleButton"
-                            Content="Сменить тему"
-                            Click="ThemeToggleButton_OnClick"
-                            Padding="15,8"
-                            Margin="0,0,0,15"
-                            HorizontalAlignment="Left"/>
+                    <!-- theme + language -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                        <Button Name="ThemeToggleButton"
+                                Content="Сменить тему"
+                                Click="ThemeToggleButton_OnClick"
+                                Padding="15,8"/>
+                        <Button Name="LangToggleButton"
+                                Content="RU / EN / 中"
+                                Click="LangToggleButton_OnClick"
+                                Padding="15,8"
+                                Margin="10,0,0,0"/>
+                    </StackPanel>
 
                     <!-- choose file -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                        <TextBlock FontSize="18" Text="Выберите файл:" VerticalAlignment="Center"/>
+                        <TextBlock Name="LabelSelectFile" FontSize="18" Text="Выберите файл:" VerticalAlignment="Center"/>
                         <Button Name="SelectFile"
                                 Content="Выбрать"
                                 FontSize="14"
@@ -66,7 +71,7 @@
 
                     <!-- encrpt -->
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Выберите метод:" FontSize="18" VerticalAlignment="Center"/>
+                        <TextBlock Name="LabelSelectMethod" Text="Выберите метод:" FontSize="18" VerticalAlignment="Center"/>
                         <ComboBox Name="MethodsSelect" FontSize="14" Margin="10,0,0,0" Width="80">
                             <ComboBoxItem Content="LSB"/>
                             <ComboBoxItem Content="EXIF"/>
@@ -93,7 +98,7 @@
                     </Border>
 
                     <!-- text -->
-                    <TextBlock FontSize="20" Text="Текст:" Margin="0,0,0,5"/>
+                    <TextBlock Name="LabelText" FontSize="20" Text="Текст:" Margin="0,0,0,5"/>
                     <TextBox Name="TextMessage"
                              MinHeight="50"
                              Watermark="Введите текст..."

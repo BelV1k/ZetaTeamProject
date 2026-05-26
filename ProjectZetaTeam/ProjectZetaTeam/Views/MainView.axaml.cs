@@ -25,6 +25,51 @@ namespace ProjectZetaTeam.Views
 //image file extensions
         private readonly string[] _supportedExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
 
+// ── Language support ──────────────────────────────────────────────────────────
+
+        private enum Lang { Ru, En, Zh }
+        private Lang _currentLang = Lang.Ru;
+
+        // [label key][ ru / en / zh ]
+        private static readonly Dictionary<string, string[]> _strings = new()
+        {
+            ["ThemeToggle"]  = ["Сменить тему",       "Toggle theme",   "切换主题"],
+            ["SelectFile"]   = ["Выберите файл:",      "Select file:",   "选择文件："],
+            ["SelectBtn"]    = ["Выбрать",             "Browse",         "浏览"],
+            ["SelectMethod"] = ["Выберите метод:",     "Select method:", "选择方法："],
+            ["LabelText"]    = ["Текст:",              "Text:",          "文本："],
+            ["Watermark"]    = ["Введите текст...",    "Enter text...",  "输入文本…"],
+            ["Encrypt"]      = ["Зашифровать",         "Encrypt",        "加密"],
+            ["Decrypt"]      = ["Расшифровать",        "Decrypt",        "解密"],
+        };
+
+        private string T(string key) => _strings[key][(int)_currentLang];
+
+        private void ApplyLanguage()
+        {
+            ThemeToggleButton.Content = T("ThemeToggle");
+            LabelSelectFile.Text      = T("SelectFile");
+            SelectFile.Content        = T("SelectBtn");
+            LabelSelectMethod.Text    = T("SelectMethod");
+            LabelText.Text            = T("LabelText");
+            TextMessage.Watermark     = T("Watermark");
+            Start.Content             = T("Encrypt");
+            StartDeEncrypt.Content    = T("Decrypt");
+        }
+
+        private void LangToggleButton_OnClick(object? sender, RoutedEventArgs e)
+        {
+            _currentLang = _currentLang switch
+            {
+                Lang.Ru => Lang.En,
+                Lang.En => Lang.Zh,
+                _       => Lang.Ru,
+            };
+            ApplyLanguage();
+        }
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 //init ui
 //default using lsb
         public MainView()
@@ -99,6 +144,8 @@ namespace ProjectZetaTeam.Views
             return null;
         }
 
+
+        
 
 //drag file on ui
 
