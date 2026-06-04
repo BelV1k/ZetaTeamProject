@@ -66,6 +66,9 @@ namespace ProjectZetaTeam.Views
                 }
             });
 
+            // Ensure the output filename has .png extension
+            if (!outputPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                outputPath += ".png";
             var pngEncoder = new PngEncoder();
             image.Save(outputPath, pngEncoder);
         }
@@ -77,7 +80,7 @@ namespace ProjectZetaTeam.Views
 
             using Image<Rgba32> image = Image.Load<Rgba32>(imagePath);
 
-    
+
             List<byte> extractedBytes = new List<byte>();
             byte currentByte = 0;
             int bitPosition = 0;
